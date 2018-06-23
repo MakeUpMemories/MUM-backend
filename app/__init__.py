@@ -37,7 +37,7 @@ ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 def main():
     imgs = []
     for file in os.listdir(app.config['UPLOAD_FOLDER']):
-        if file.endswith(".jpg"):
+        if not file.endswith(".json"):
             imgs.append(file)
     return render_template('index.html', files=imgs)
 
