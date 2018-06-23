@@ -75,12 +75,12 @@ def get_order(id):
 
 @app.route('/order/<id>/qr')
 def get_order_qr(id):
-    return serve_pil_image(qrcode.make("http://localhost:8080/order/{}".format(id)))
+    return serve_pil_image(qrcode.make("http://18.184.165.57/order/{}".format(id)))
 
 
 @app.route('/uploads/<id>/qr')
 def get_image_qr(id):
-    return serve_pil_image(qrcode.make("http://localhost:8080/uploads/{}".format(id)))
+    return serve_pil_image(qrcode.make("http://18.184.165.57/memory/{}".format(id)))
 
 
 @app.route('/memory/<id>')
@@ -90,7 +90,7 @@ def compose(id):
         with open(path + ".json", "r") as fp:
             colors = json.load(fp)
         return serve_pil_image(processing.compose_image(Image.open(path), colors,
-                                                        qrcode.make("http://localhosT:8080/memory/{}".format(id))))
+                                                        qrcode.make("http://18.184.165.57/memory/{}".format(id))))
 
 
 def allowed_file(filename):
