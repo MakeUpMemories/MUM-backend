@@ -19,7 +19,7 @@ def process(img: Image):
 
     result = []
     for i in set(clusters):
-        result.append(list(np.round(np.average(data[clusters == i], axis=0))))
+        result.append(list(map(int, list(np.round(np.average(data[clusters == i], axis=0)))))) #govnokod
     return result
 
 
