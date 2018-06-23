@@ -1,10 +1,11 @@
 from PIL import Image
 import logging
+import qrcode
 import uuid
 import json
 import os
 
-
+from io import BytesIO
 from flask import Flask, request, redirect, url_for, send_file, jsonify, abort
 from werkzeug.utils import secure_filename
 
@@ -51,6 +52,7 @@ def create_order():
         box=None,
         price=0))
 
+
 @app.route('/order/finish', methods=['POST'])
 def store_order():
     order = models.Order.from_json(request.json)
@@ -58,17 +60,38 @@ def store_order():
         json.dump(order.to_json(), fp)
     return jsonify(order)
 
+
 @app.route('/order/<id>')
 def get_order(id):
-    print(id)
     pth = os.path.join(ORDER_FOLDER, id)
-    if(os.path.exists(pth)):
+    if (os.path.exists(pth)):
         with open(os.path.join(ORDER_FOLDER, id), 'r') as fp:
             l = json.load(fp)
         print(l)
         return jsonify(l)
     else:
         abort(404)
+
+
+@app.route('/order/<id>/qr')
+def get_order_qr(id):
+    return serve_pil_image(qrcode.make("http://localhost:8080/order/{}".format(id)))
+
+
+@app.route('/uploads/<id>/qr')
+def get_image_qr(id):
+    return serve_pil_image(qrcode.make("http://localhost:8080/uploads/{}".format(id)))
+
+
+@app.route('/memory/<id>')
+def compose(id):
+    path = os.path.join(app.config['UPLOAD_FOLDER'], id)
+    if (os.path.exists(path)):
+        with open(path + ".json", "r") as fp:
+            colors = json.load(fp)
+        return serve_pil_image(processing.compose_image(Image.open(path), colors,
+                                                        qrcode.make("http://localhosT:8080/memory/{}".format(id))))
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -105,11 +128,18 @@ def upload_file():
     </form>
     '''
 
+
 from werkzeug.wsgi import SharedDataMiddleware
 
 app.add_url_rule('/uploads/<filename>', 'uploaded_file',
                  build_only=True)
 app.wsgi_app = SharedDataMiddleware(app.wsgi_app, {
-    '/uploads':  app.config['UPLOAD_FOLDER']
+    '/uploads': app.config['UPLOAD_FOLDER']
 })
 
+
+def serve_pil_image(pil_img):
+    img_io = BytesIO()
+    pil_img.save(img_io, 'JPEG')
+    img_io.seek(0)
+    return send_file(img_io, mimetype='image/jpeg')
