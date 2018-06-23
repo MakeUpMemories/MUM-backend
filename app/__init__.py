@@ -88,18 +88,24 @@ def get_image_qr(id):
     return serve_pil_image(qrcode.make("http://18.184.165.57:8080/memory/{}".format(id)))
 
 
+cache = {}
+
 @app.route('/uploads/<id>/memory')
 def compose(id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], id)
     if (os.path.exists(path)):
-        with open(path + ".json", "r") as fp:
-            colors = json.load(fp)
-        return serve_pil_image(processing.compose_image(Image.open(path), colors,
-                                                        qrcode.make("http://18.184.165.57:8080/memory/{}".format(id))))
+        if id not in cache:
+            with open(path + ".json", "r") as fp:
+                colors = json.load(fp)
+            cache[id] = processing.compose_image(Image.open(path), colors,
+                                                        qrcode.make("http://18.184.165.57:8080/memory/{}".format(id)))
+        return serve_pil_image(cache[id])
+
 
 @app.route('/memory/<id>')
 def imgtemplate(id):
     return render_template('ViewImage.html', id=id)
+
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
