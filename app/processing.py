@@ -1,5 +1,6 @@
 import sklearn.cluster as cluster
 from PIL import Image, ImageDraw
+
 import numpy as np
 
 
@@ -24,13 +25,13 @@ def process(img: Image):
 
 
 def compose_image(img: Image, colors, qrcode):
+    img.thumbnail((800, 600))
     palete = Image.new("RGB", (img.size[0], img.size[1] + 100))
     palete.paste(img)
     qrcode.thumbnail((100, 100))
     palete.paste(qrcode, (img.size[0] - 100, img.size[1]))
     draw = ImageDraw.Draw(palete)
     draw.rectangle(((0, img.size[1]), (img.size[0] - 100, img.size[1] + 100)), fill=(255, 255, 255))
-    draw.text((10, img.size[1]), "MakeUp Memories", fill="black")
     delta = (img.size[0] - 100) / len(colors['colors'])
     for i in range(len(colors['colors'])):
         c = colors['colors'][i]

@@ -6,7 +6,7 @@ import json
 import os
 
 from io import BytesIO
-from flask import Flask, request, redirect, url_for, send_file, jsonify, abort
+from flask import Flask, request, redirect, url_for, send_file, jsonify, abort, render_template
 from werkzeug.utils import secure_filename
 
 from app.models import MyJSONEncoder
@@ -29,12 +29,17 @@ if not os.path.exists(ORDER_FOLDER):
     os.mkdir(ORDER_FOLDER)
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+print(app.config)
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg'])
 
 
 @app.route('/')
 def main():
-    return "/user to view User model (password field is omitted);\n /order to view Order model; \n /img to view Image model; \n /img/img to preview image"
+    imgs = []
+    for file in os.listdir(app.config['UPLOAD_FOLDER']):
+        if file.endswith(".jpg"):
+            imgs.append(file)
+    return render_template('index.html', files=imgs)
 
 
 @app.route('/user/register', methods=['POST'])
@@ -75,23 +80,26 @@ def get_order(id):
 
 @app.route('/order/<id>/qr')
 def get_order_qr(id):
-    return serve_pil_image(qrcode.make("http://18.184.165.57/order/{}".format(id)))
+    return serve_pil_image(qrcode.make("http://18.184.165.57:8080/order/{}".format(id)))
 
 
 @app.route('/uploads/<id>/qr')
 def get_image_qr(id):
-    return serve_pil_image(qrcode.make("http://18.184.165.57/memory/{}".format(id)))
+    return serve_pil_image(qrcode.make("http://18.184.165.57:8080/memory/{}".format(id)))
 
 
-@app.route('/memory/<id>')
+@app.route('/uploads/<id>/memory')
 def compose(id):
     path = os.path.join(app.config['UPLOAD_FOLDER'], id)
     if (os.path.exists(path)):
         with open(path + ".json", "r") as fp:
             colors = json.load(fp)
         return serve_pil_image(processing.compose_image(Image.open(path), colors,
-                                                        qrcode.make("http://18.184.165.57/memory/{}".format(id))))
+                                                        qrcode.make("http://18.184.165.57:8080/memory/{}".format(id))))
 
+@app.route('/memory/<id>')
+def imgtemplate(id):
+    return render_template('ViewImage.html', id=id)
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -117,16 +125,9 @@ def upload_file():
             i = models.MImage(id=filename, colors=processing.process(Image.open(path)))
             with open(os.path.join(app.config['UPLOAD_FOLDER'], filename + ".json"), 'w') as fp:
                 json.dump(i.to_json(), fp)
-            return jsonify(i.to_json())
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <p><input type=file name=file>
-         <input type=submit value=Upload>
-    </form>
-    '''
+            return  redirect("/memory/{}".format(i._id), code=302)
+
+    return render_template("UploadImage.html")
 
 
 from werkzeug.wsgi import SharedDataMiddleware
