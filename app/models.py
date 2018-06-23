@@ -30,20 +30,23 @@ class MyJSONEncoder(JSONEncoder):
                 'email': obj._email,
             }
         elif isinstance(obj, MImage):
-            return {
-                'colors': obj._colors,
-                'id': obj._id
-            }
+            return obj.to_json()
         elif isinstance(obj, Product) or isinstance(obj, IndividualProduct):
             return obj.to_json()
         elif isinstance(obj, Order):
-            return {'img': obj._img, 'prd': list(map(lambda x: x.to_json(), obj._prd)), 'box': obj._box, 'price': obj._price}
+            return obj.to_json()
         elif isinstance(obj, ProductType):
             return str(obj).split(".")[1]
         return super(MyJSONEncoder, self).default(obj)
 
 
 class MUser:
+    @staticmethod
+    def from_json(j):
+        return MUser(j['login'] if 'login' in j else '',
+                     j['email'] if 'email' in j else '',
+                     j['password'] if 'password' in j else '')
+
     def __init__(self, login: str, email: str, password: str):
         self._login = login
         self._email = email
@@ -51,11 +54,18 @@ class MUser:
 
 
 class MImage:
-    def __init__(self, image: Image, colors: List[Color], id: str):
-        self._image = image
+    def __init__(self, colors: List[Color], id: str):
         self._colors = colors
         self._id = id
 
+    @staticmethod
+    def from_json(j):
+        print(j, type(j))
+        return MImage(id=j['id'] if 'id' in j else None,
+                      colors=j['colors'] if 'colors' in j else None)
+
+    def to_json(self):
+        return {'id': self._id, 'colors': self._colors}
 
 class Product:
     def __init__(self, type: ProductType, url: str, color: Color, name: str, price: float):
@@ -83,8 +93,26 @@ class IndividualProduct(Product):
 
 
 class Order:
-    def __init__(self, img: MImage, prd: List[Product], box: str, price: float):
+    @staticmethod
+    def from_json(j):
+        return Order(id = j['id'] if 'id' in j else '',
+                     img = MImage.from_json(j['img']) if 'img' in j else None,
+                     prd = j['prd'] if 'prd' in j else None,
+                     box = j['box'] if 'box' in j else '',
+                     price=j['price'] if 'price' in j else 0)
+
+    def __init__(self, id: str, img: MImage, prd: List[Product], box: str, price: float):
+        self._id = id
         self._img = img
         self._prd = prd
         self._box = box
         self._price = price
+
+    def to_json(self):
+        return {
+            'id': self._id,
+            'img': self._img,
+            'prd': list(map(lambda x: x.to_json(), self._prd)) if self._prd is not None else None,
+            'box': self._box,
+            'price': self._price
+        }
