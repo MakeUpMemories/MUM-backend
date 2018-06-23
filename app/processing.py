@@ -56,8 +56,8 @@ def image_transpose_exif(im):
         return functools.reduce(type(im).transpose, seq, im)
 
 def compose_image(img: Image, colors, qrcode):
-    img = image_transpose_exif(img)
     img.thumbnail((800, 600))
+    img = image_transpose_exif(img)
     palete = Image.new("RGB", (img.size[0], img.size[1] + 100))
     palete.paste(img)
     qrcode.thumbnail((100, 100))
